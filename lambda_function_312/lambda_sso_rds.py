@@ -15,9 +15,10 @@ logger.setLevel(logging.INFO)
 
 db_roles_map = json.loads(os.environ['db_roles_map'])
 
-def connect_rds(db_host, db_password, db_username, db_port, db_name, rds_name, username, db_action, db_role):
+
+def connect_rds(db_host, db_password, db_username, db_port, db_name, username, db_action, db_role):
     role = db_roles_map.get(db_role)
-    logger.info("Connecting to RDS instance " + rds_name)
+    logger.info("Connecting to RDS instance " + db_host)
     try:
         rds_connection = psycopg2.connect(
             host = db_host,
@@ -98,25 +99,26 @@ def get_db_creds(secret_name):
         logger.error(e)
 
     if 'SecretString' in secret_value_response:
-        secret = json.loads(secret_value_response['SecretString'])
-        global db_username, db_host, db_password, db_port, db_name, rds_name
-        db_username = secret["username"]
-        db_host = secret["host"]
-        logger.info("RDS DB instance is " + db_host)
-        db_password = secret["password"]
-        db_port = secret["port"]
-        db_name = secret["dbname"]
-        rds_name = secret["dbInstanceIdentifier"]
+        global db_password
+        db_password = secret_value_response['SecretString']
     else:
         logger.info("No database credentials found")
         return None
-    
+
+
 def lambda_handler(event, context):
     message_attributes = event['Records'][0]['messageAttributes']
     environment = message_attributes['environment']['stringValue']
     username = message_attributes['username']['stringValue']
     db_action = message_attributes['db_action']['stringValue']
     db_role = message_attributes['db_role']['stringValue']
-    secret_name = "/" + environment + "/lims"
+    # Database connection parameters
+    db_username = "lims"
+    db_host = "lims-db." + environment
+    db_port = "5432"
+    db_name = "lims"
+    secret_name = "/" + environment + "/live/limsDbPass"
+    logger.info("RDS DB instance is " + db_host)
+    # Run secret_name and connect_rds functions
     get_db_creds(secret_name)
-    connect_rds(db_host, db_password, db_username, db_port, db_name, rds_name, username, db_action, db_role)
+    connect_rds(db_host, db_password, db_username, db_port, db_name, username, db_action, db_role)

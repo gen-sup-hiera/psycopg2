@@ -117,7 +117,7 @@ def lambda_handler(event, context):
     db_host = "lims-db." + environment
     db_port = "5432"
     db_name = "lims"
-    secret_name = "/" + environment + "/live/limsDbPass"
+    secret_name = "/" + environment + "/live/lims-db-root-pass"
     logger.info("RDS DB instance is " + db_host)
     # Run secret_name and connect_rds functions
     get_db_creds(secret_name)
